@@ -1,598 +1,1022 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { 
-  Activity, 
-  Bot, 
-  Coins, 
-  Code2, 
-  Bell, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  RefreshCw, 
-  Wallet, 
-  Send, 
-  Copy, 
-  Check, 
-  Sparkles, 
-  ShieldCheck,
-  Cpu,
-  X,
-  LineChart,
-  MessageSquare,
+import React, { useState } from "react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
+import {
+  Bot,
+  Sparkles,
   TrendingUp,
-  HelpCircle
-} from 'lucide-react';
+  Wallet,
+  Send,
+  X,
+  Activity,
+  BarChart3,
+  RefreshCw,
+  Layers,
+  Lock,
+  KeyRound,
+  Users,
+  Eye,
+  Clock,
+  ArrowUpRight,
+  Zap,
+  Globe,
+  LogOut,
+  AlertCircle,
+  ShieldCheck,
+  CheckCircle2,
+  Coins,
+  ArrowDownRight,
+  Shield,
+} from "lucide-react";
 
-export default function Home() {
-  const [activeTab, setActiveTab] = useState('tracker');
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+// Compound V3 Multi-Chain Markets Data
+const MARKETS = [
+  {
+    id: "usdc-eth",
+    name: "USDC (Ethereum)",
+    chain: "Ethereum",
+    symbol: "USDC",
+    tvl: "$1.18B",
+    supplyApr: "4.85%",
+    borrowApr: "6.72%",
+    utilization: "79.4%",
+    baseMultiplier: 1.0,
+  },
+  {
+    id: "weth-eth",
+    name: "WETH (Ethereum)",
+    chain: "Ethereum",
+    symbol: "WETH",
+    tvl: "$492M",
+    supplyApr: "2.35%",
+    borrowApr: "4.15%",
+    utilization: "63.1%",
+    baseMultiplier: 0.42,
+  },
+  {
+    id: "usdt-eth",
+    name: "USDT (Ethereum)",
+    chain: "Ethereum",
+    symbol: "USDT",
+    tvl: "$310M",
+    supplyApr: "5.10%",
+    borrowApr: "7.20%",
+    utilization: "81.0%",
+    baseMultiplier: 0.28,
+  },
+  {
+    id: "usdc-arb",
+    name: "USDC (Arbitrum)",
+    chain: "Arbitrum",
+    symbol: "USDC",
+    tvl: "$245M",
+    supplyApr: "5.60%",
+    borrowApr: "7.95%",
+    utilization: "84.2%",
+    baseMultiplier: 0.22,
+  },
+  {
+    id: "weth-arb",
+    name: "WETH (Arbitrum)",
+    chain: "Arbitrum",
+    symbol: "WETH",
+    tvl: "$88M",
+    supplyApr: "2.80%",
+    borrowApr: "4.60%",
+    utilization: "68.0%",
+    baseMultiplier: 0.12,
+  },
+  {
+    id: "usdc-base",
+    name: "USDC (Base)",
+    chain: "Base",
+    symbol: "USDC",
+    tvl: "$182M",
+    supplyApr: "6.20%",
+    borrowApr: "8.40%",
+    utilization: "88.5%",
+    baseMultiplier: 0.16,
+  },
+  {
+    id: "usdc-poly",
+    name: "USDC (Polygon)",
+    chain: "Polygon",
+    symbol: "USDC",
+    tvl: "$95M",
+    supplyApr: "4.90%",
+    borrowApr: "6.90%",
+    utilization: "74.5%",
+    baseMultiplier: 0.09,
+  },
+  {
+    id: "usdc-op",
+    name: "USDC (Optimism)",
+    chain: "Optimism",
+    symbol: "USDC",
+    tvl: "$76M",
+    supplyApr: "5.30%",
+    borrowApr: "7.50%",
+    utilization: "77.0%",
+    baseMultiplier: 0.07,
+  },
+];
 
-  // 1. DATA FOR TRACKER
-  const [tokens, setTokens] = useState([
-    { name: 'Fetch.ai', symbol: 'FET', price: 1.34, change: 8.45, mcap: '1.14B', volume: '142M', progress: 100, live: true, high7d: 1.42, low7d: 1.18, high30d: 1.55, low30d: 0.98 },
-    { name: 'League of Agents', symbol: 'LOA', price: 0.082, change: 14.2, mcap: '8.2M', volume: '840K', progress: 92, live: true, high7d: 0.089, low7d: 0.065, high30d: 0.095, low30d: 0.040 },
-    { name: 'Shakti Foundation', symbol: 'SHAKTI', price: 0.041, change: -3.15, mcap: '4.1M', volume: '310K', progress: 78, live: false, high7d: 0.048, low7d: 0.038, high30d: 0.062, low30d: 0.035 },
-    { name: 'ZuCity Agent', symbol: 'ZUCITY', price: 0.019, change: 24.8, mcap: '1.9M', volume: '190K', progress: 65, live: true, high7d: 0.021, low7d: 0.012, high30d: 0.025, low30d: 0.009 },
-    { name: 'Creationology', symbol: 'CR369', price: 0.0055, change: -1.2, mcap: '550K', volume: '45K', progress: 42, live: false, high7d: 0.0062, low7d: 0.0051, high30d: 0.0080, low30d: 0.0042 },
+const CHAINS_FILTER = ["All Chains", "Ethereum", "Arbitrum", "Base", "Polygon", "Optimism"];
+const TIMEFRAMES = ["24H", "Yesterday", "7D", "30D"];
+
+// Telemetry Mock Data
+const TRAFFIC_DATA = [
+  { day: "Day 1", visitors: 420, activeUsers: 180 },
+  { day: "Day 5", visitors: 680, activeUsers: 310 },
+  { day: "Day 10", visitors: 950, activeUsers: 480 },
+  { day: "Day 15", visitors: 1420, activeUsers: 720 },
+  { day: "Day 20", visitors: 1980, activeUsers: 1040 },
+  { day: "Day 25", visitors: 2650, activeUsers: 1490 },
+  { day: "Day 30", visitors: 3410, activeUsers: 1890 },
+];
+
+export default function CompoundDashboard() {
+  // Navigation View State
+  const [activeTab, setActiveTab] = useState("dashboard");
+
+  // Admin Auth State
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [adminUser, setAdminUser] = useState("");
+  const [adminPass, setAdminPass] = useState("");
+  const [loginError, setLoginError] = useState("");
+
+  // Market Selection & Chart State
+  const [selectedChain, setSelectedChain] = useState("All Chains");
+  const [selectedMarket, setSelectedMarket] = useState(MARKETS[0]);
+  const [selectedTimeframe, setSelectedTimeframe] = useState("30D");
+
+  // Circle Lending Action Modal State
+  const [isLendingModalOpen, setIsLendingModalOpen] = useState(false);
+  const [lendingActionType, setLendingActionType] = useState("supply");
+  const [lendingAmount, setLendingAmount] = useState("1000");
+  const [isLendingProcessing, setIsLendingProcessing] = useState(false);
+  const [lendingSuccess, setLendingSuccess] = useState(false);
+
+  // AI Drawer State
+  const [isAiOpen, setIsAiOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState([
+    {
+      role: "ai",
+      text: "Hello! I am your Compound V3 & Circle USDC Copilot powered by Google Gemini. Ask me anything about lending rates, Circle Programmable Wallets, or cross-chain settlement!",
+    },
   ]);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
-  // 2. CHART MODAL STATE (7D / 30D)
-  const [selectedTokenForChart, setSelectedTokenForChart] = useState(null);
-  const [chartTimeframe, setChartTimeframe] = useState('7D'); // '7D' or '30D'
+  // Filter Markets
+  const filteredMarkets =
+    selectedChain === "All Chains"
+      ? MARKETS
+      : MARKETS.filter((m) => m.chain === selectedChain);
 
-  // 3. HOSTINGER-STYLE FLOATING GEMINI COPILOT STATE
-  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
-  const [copilotMessages, setCopilotMessages] = useState([
-    { role: 'assistant', text: 'ሰላም! I am your Fetch.ai & BNB Chain AI Copilot powered by Google Gemini. Ask me about live tokens, top gainers, or how to launch an agent!' }
-  ]);
-  const [copilotInput, setCopilotInput] = useState('');
-  const [isThinking, setIsThinking] = useState(false);
+  // Dynamic Chart Generation
+  const generateChartData = () => {
+    const points =
+      selectedTimeframe === "24H"
+        ? 12
+        : selectedTimeframe === "Yesterday"
+        ? 8
+        : selectedTimeframe === "7D"
+        ? 7
+        : 15;
 
-  // 4. NO-CODE GENERATOR STATE
-  const [agentName, setAgentName] = useState('BSCScoutAgent');
-  const [agentRole, setAgentRole] = useState('Price Arbitrage Monitor');
-  const [agentInterval, setAgentInterval] = useState('30');
+    const data = [];
+    for (let i = 1; i <= points; i++) {
+      const label =
+        selectedTimeframe === "24H"
+          ? `${i * 2}:00`
+          : selectedTimeframe === "Yesterday"
+          ? `H-${i * 3}`
+          : selectedTimeframe === "7D"
+          ? `Day ${i}`
+          : `Nov ${i * 2}`;
 
-  // Handle Wallet
-  const handleConnectWallet = () => {
-    if (!walletConnected) {
-      setWalletAddress('0x71C...89E4');
-      setWalletConnected(true);
-    } else {
-      setWalletConnected(false);
-      setWalletAddress('');
+      const mult = selectedMarket.baseMultiplier;
+      const baseVal = 700 * mult;
+      const tvl = Math.round(baseVal + Math.sin(i * 0.8) * 60 + i * 8);
+      const supplyVol = Math.round(baseVal * 0.4 + Math.cos(i) * 25);
+      const borrowVol = Math.round(baseVal * 0.3 + Math.sin(i) * 20);
+
+      data.push({
+        time: label,
+        tvl: tvl,
+        supplyVolume: supplyVol,
+        borrowVolume: borrowVol,
+      });
     }
+    return data;
   };
 
-  // Refresh Prices
-  const refreshPrices = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setTokens(prev => prev.map(t => ({
-        ...t,
-        price: +(t.price * (1 + (Math.random() * 0.04 - 0.02))).toFixed(4),
-        change: +(t.change + (Math.random() * 2 - 1)).toFixed(2)
-      })));
-      setIsRefreshing(false);
-    }, 600);
-  };
+  const chartData = generateChartData();
 
-  // GEMINI API CALL FOR HOSTINGER-STYLE COPILOT
-  const handleSendCopilotMessage = async (queryText) => {
-    const textToSend = queryText || copilotInput;
-    if (!textToSend.trim() || isThinking) return;
+  // AI Handler
+  const handleSendMessage = async (customMessage) => {
+    const query = customMessage || chatInput;
+    if (!query.trim() || isAiLoading) return;
 
-    const newMsgs = [...copilotMessages, { role: 'user', text: textToSend }];
-    setCopilotMessages(newMsgs);
-    setCopilotInput('');
-    setIsThinking(true);
+    const newMessages = [...chatMessages, { role: "user", text: query }];
+    setChatMessages(newMessages);
+    if (!customMessage) setChatInput("");
+    setIsAiLoading(true);
 
     try {
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyB8GH11q8_prm18Ai3mo4a3cwUVjMz_LcA';
-      
-      const currentTokenSummary = tokens.map(t => 
-        `${t.name} ($${t.symbol}): Price $${t.price}, 24h Change ${t.change}%, MarketCap $${t.mcap}, Graduation ${t.progress}%`
-      ).join('\n');
-
-      const systemPrompt = `You are "Agent Launch Copilot", an elite AI assistant for the Fetch.ai and BNB Chain autonomous agent ecosystem.
-Here is the LIVE TOKEN DATA right now:
-${currentTokenSummary}
-
-User Question: "${textToSend}"
-
-Instructions:
-1. Answer accurately based on the live token data above (e.g. if asked who is pumping, note ZuCity +24.8% and LOA +14.2%).
-2. You can respond in Tigrinya or English depending on user language. Keep responses concise, friendly, and helpful.`;
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: systemPrompt }] }]
-        })
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: query }),
       });
+      const data = await res.json();
 
-      const data = await response.json();
-      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I am analyzing the blockchain... please try again!";
-
-      setCopilotMessages(prev => [...prev, { role: 'assistant', text: reply }]);
+      if (data.reply) {
+        setChatMessages((prev) => [...prev, { role: "ai", text: data.reply }]);
+      } else {
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "ai", text: "Notice: Unable to process response. " + (data.error || "") },
+        ]);
+      }
     } catch (err) {
-      setCopilotMessages(prev => [...prev, { role: 'assistant', text: "Error connecting to Gemini. Make sure your API key is active!" }]);
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "ai", text: "Connection error: " + err.message },
+      ]);
     } finally {
-      setIsThinking(false);
+      setIsAiLoading(false);
     }
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleAdminLogin = (e) => {
+    e.preventDefault();
+    if (adminUser === "admin" && adminPass === "compound2025") {
+      setIsAdminLoggedIn(true);
+      setLoginError("");
+    } else {
+      setLoginError("Invalid credentials. Try: admin / compound2025");
+    }
+  };
+
+  // Handle Circle Lending Execution Simulation
+  const executeLendingAction = () => {
+    setIsLendingProcessing(true);
+    setTimeout(() => {
+      setIsLendingProcessing(false);
+      setLendingSuccess(true);
+      setTimeout(() => {
+        setLendingSuccess(false);
+        setIsLendingModalOpen(false);
+      }, 2500);
+    }, 1800);
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-gray-100 flex flex-col font-sans relative">
-      
-      {/* NAVBAR */}
-      <header className="border-b border-gray-800 bg-[#0f172a]/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <Cpu className="text-black h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-              AgentLaunch Suite
-            </h1>
-            <p className="text-xs text-gray-400">Fetch.ai (ASI) × BNB Chain Portal</p>
-          </div>
-        </div>
-
-        {/* TABS */}
-        <div className="hidden md:flex bg-gray-900/90 p-1 rounded-xl border border-gray-800 space-x-1">
-          <button 
-            onClick={() => setActiveTab('tracker')}
-            className={`px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-2 ${activeTab === 'tracker' ? 'bg-emerald-500 text-black shadow' : 'text-gray-400 hover:text-white'}`}>
-            <Activity className="h-4 w-4" /> Live Tracker & Charts
-          </button>
-          <button 
-            onClick={() => setActiveTab('generator')}
-            className={`px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-2 ${activeTab === 'generator' ? 'bg-emerald-500 text-black shadow' : 'text-gray-400 hover:text-white'}`}>
-            <Code2 className="h-4 w-4" /> No-Code Deployer
-          </button>
-          <button 
-            onClick={() => setActiveTab('signals')}
-            className={`px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-2 ${activeTab === 'signals' ? 'bg-emerald-500 text-black shadow' : 'text-gray-400 hover:text-white'}`}>
-            <Bell className="h-4 w-4" /> Alerts
-          </button>
-        </div>
-
-        {/* WALLET BUTTON */}
-        <button 
-          onClick={handleConnectWallet}
-          className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-black font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg transition active:scale-95">
-          <Wallet className="h-4 w-4" />
-          {walletConnected ? walletAddress : 'Connect BSC Wallet'}
-        </button>
-      </header>
-
-      {/* MAIN CONTAINER */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 space-y-6">
-
-        {/* HERO BANNER */}
-        <div className="rounded-2xl bg-gradient-to-r from-emerald-950/40 via-gray-900 to-cyan-950/40 border border-emerald-500/20 p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="max-w-2xl space-y-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-              <Sparkles className="h-3.5 w-3.5" /> Google Gemini AI + Fetch.ai Integrated
-            </span>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-white">
-              Autonomous AI Agent Ecosystem & Live Analytics
-            </h2>
-            <p className="text-sm text-gray-400">
-              Click any token row to inspect 7D / 30D price charts. Use the Hostinger-style AI Copilot (bottom right) for instant live insights.
-            </p>
-          </div>
-
-          <button 
-            onClick={() => setIsCopilotOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:opacity-90 text-black font-bold text-xs px-4 py-3 rounded-xl shadow-lg transition">
-            <Bot className="h-4 w-4" /> Open AI Assistant
-          </button>
-        </div>
-
-        {/* TAB 1: TRACKER & CHARTS */}
-        {activeTab === 'tracker' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-emerald-400" />
-                  Live Token Analytics (Click row for Chart)
-                </h3>
-                <p className="text-xs text-gray-400">Real-time DEX liquidity pools & PancakeSwap graduation</p>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-black">
+      {/* Top Header */}
+      <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <Activity className="h-6 w-6 text-slate-950 font-bold" />
               </div>
-              <button 
-                onClick={refreshPrices}
-                className="flex items-center gap-1.5 text-xs bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg border border-gray-700 transition">
-                <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                Refresh Data
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-bold tracking-tight text-white">
+                    Compound V3 <span className="text-emerald-400">Comet</span>
+                  </h1>
+                  <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">
+                    CIRCLE DEVELOPER SUITE
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">Institutional Multi-Chain Lending & AI Copilot</p>
+              </div>
+            </div>
+
+            {/* TAB SELECTOR: Live Dashboard vs Admin Telemetry */}
+            <div className="hidden md:flex items-center bg-slate-900 border border-slate-800 p-1 rounded-xl ml-4">
+              <button
+                onClick={() => setActiveTab("dashboard")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  activeTab === "dashboard"
+                    ? "bg-emerald-500 text-slate-950 shadow-md font-bold"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                📊 Live Markets
+              </button>
+              <button
+                onClick={() => setActiveTab("admin")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+                  activeTab === "admin"
+                    ? "bg-emerald-500 text-slate-950 shadow-md font-bold"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Lock className="w-3 h-3" />
+                Admin Telemetry
               </button>
             </div>
+          </div>
 
-            <div className="overflow-x-auto rounded-xl border border-gray-800 bg-gray-900/60 shadow-xl">
-              <table className="w-full text-left text-sm text-gray-300">
-                <thead className="bg-gray-950/70 text-xs text-gray-400 uppercase border-b border-gray-800">
-                  <tr>
-                    <th className="px-6 py-4">Agent Token</th>
-                    <th className="px-6 py-4">Price (USD)</th>
-                    <th className="px-6 py-4">24h Change</th>
-                    <th className="px-6 py-4">Market Cap</th>
-                    <th className="px-6 py-4">Graduation</th>
-                    <th className="px-6 py-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800/60">
-                  {tokens.map((token, idx) => (
-                    <tr 
-                      key={idx} 
-                      onClick={() => setSelectedTokenForChart(token)}
-                      className="hover:bg-gray-800/50 cursor-pointer transition group">
-                      <td className="px-6 py-4 font-semibold text-white flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        {token.name} <span className="text-xs text-gray-500 font-normal">(${token.symbol})</span>
-                      </td>
-                      <td className="px-6 py-4 font-mono font-medium">${token.price}</td>
-                      <td className="px-6 py-4 font-mono">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${token.change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                          {token.change >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                          {token.change >= 0 ? `+${token.change}%` : `${token.change}%`}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-300 font-mono">${token.mcap}</td>
-                      <td className="px-6 py-4">
-                        <div className="w-full max-w-xs space-y-1">
-                          <div className="flex justify-between text-xs font-medium">
-                            <span className="text-gray-400">{token.progress}%</span>
-                            <span className="text-emerald-400">{token.progress === 100 ? 'Graduated 🎉' : 'Bonding'}</span>
-                          </div>
-                          <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
-                            <div 
-                              className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-full rounded-full transition-all duration-500" 
-                              style={{ width: `${token.progress}%` }}>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-xs text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg group-hover:bg-emerald-500 group-hover:text-black transition">
-                          View Chart 📈
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="flex items-center gap-3">
+            {/* Quick Lending Action Buttons */}
+            <button
+              onClick={() => {
+                setLendingActionType("supply");
+                setIsLendingModalOpen(true);
+              }}
+              className="hidden sm:flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3.5 py-2 rounded-xl text-xs font-bold transition"
+            >
+              <Coins className="w-3.5 h-3.5" />
+              Supply USDC
+            </button>
+
+            <button
+              onClick={() => {
+                setLendingActionType("borrow");
+                setIsLendingModalOpen(true);
+              }}
+              className="hidden sm:flex items-center gap-1.5 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 px-3.5 py-2 rounded-xl text-xs font-bold transition"
+            >
+              <ArrowDownRight className="w-3.5 h-3.5" />
+              Borrow USDC
+            </button>
+
+            <button
+              onClick={() => setIsAiOpen(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold transition shadow-md shadow-emerald-500/20"
+            >
+              <Sparkles className="w-4 h-4 fill-slate-950" />
+              Open AI Copilot
+            </button>
+
+            <button
+              onClick={() => {
+                setLendingActionType("supply");
+                setIsLendingModalOpen(true);
+              }}
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-4 py-2 rounded-xl text-xs font-semibold transition"
+            >
+              <Wallet className="w-3.5 h-3.5 text-emerald-400" />
+              Circle Wallet
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* VIEW 1: LIVE DASHBOARD */}
+      {activeTab === "dashboard" && (
+        <main className="max-w-7xl mx-auto w-full px-6 py-8 flex-1">
+          {/* Hero Banner for Circle Developer Integration */}
+          <div className="bg-gradient-to-r from-slate-900 via-slate-900/90 to-emerald-950/40 border border-slate-800/80 rounded-3xl p-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 mb-1">
+                <Shield className="w-4 h-4" />
+                <span>Integrated with Circle Developer Platform & CCTP</span>
+              </div>
+              <h2 className="text-xl font-bold text-white">
+                One-Click Multi-Chain USDC Lending & Borrowing
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Execute gasless stablecoin deposits, earn instant yields, or borrow liquidity across 5 networks.
+              </p>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => {
+                  setLendingActionType("supply");
+                  setIsLendingModalOpen(true);
+                }}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg shadow-emerald-500/20"
+              >
+                + Supply to {selectedMarket.symbol}
+              </button>
+              <button
+                onClick={() => {
+                  setLendingActionType("borrow");
+                  setIsLendingModalOpen(true);
+                }}
+                className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-4 py-2.5 rounded-xl text-xs border border-slate-700 transition"
+              >
+                Borrow Liquidity
+              </button>
             </div>
           </div>
-        )}
 
-        {/* TAB 2: NO-CODE AGENT GENERATOR */}
-        {activeTab === 'generator' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gray-900/60 rounded-xl border border-gray-800 p-6 space-y-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Code2 className="h-5 w-5 text-emerald-400" />
-                Fetch.ai uAgents Generator
-              </h3>
-              <p className="text-xs text-gray-400">Configure parameters to generate a production-ready autonomous agent script.</p>
-
-              <div className="space-y-3 text-xs">
-                <div>
-                  <label className="block text-gray-400 mb-1">Agent Name</label>
-                  <input 
-                    type="text" 
-                    value={agentName}
-                    onChange={(e) => setAgentName(e.target.value)}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-400 mb-1">Role / Function</label>
-                  <select 
-                    value={agentRole}
-                    onChange={(e) => setAgentRole(e.target.value)}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
-                    <option>Price Arbitrage Monitor</option>
-                    <option>Agent Launch Token Liquidity Sentinel</option>
-                    <option>PancakeSwap Graduation Tracker</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-gray-400 mb-1">Interval (Seconds)</label>
-                  <input 
-                    type="number" 
-                    value={agentInterval}
-                    onChange={(e) => setAgentInterval(e.target.value)}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </div>
+          {/* Chain Filters */}
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-emerald-400" />
+              <span className="text-xs font-bold text-slate-300">Filter by Blockchain:</span>
             </div>
-
-            <div className="bg-gray-900/60 rounded-xl border border-gray-800 p-6 flex flex-col justify-between">
-              <div className="flex items-center justify-between pb-3 border-b border-gray-800">
-                <span className="text-xs font-mono text-emerald-400">Output: agent.py</span>
-                <button 
-                  onClick={() => copyToClipboard(`from uagents import Agent, Context\nagent = Agent(name="${agentName}")\n@agent.on_interval(period=${agentInterval}.0)\nasync def run(ctx: Context):\n    ctx.logger.info("Executing ${agentRole} on BNB Chain")\nagent.run()`)}
-                  className="flex items-center gap-1 text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-2.5 py-1 rounded transition">
-                  {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                  {copied ? 'Copied!' : 'Copy Code'}
+            <div className="flex flex-wrap gap-1.5">
+              {CHAINS_FILTER.map((chain) => (
+                <button
+                  key={chain}
+                  onClick={() => setSelectedChain(chain)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                    selectedChain === chain
+                      ? "bg-slate-700 text-emerald-400 border border-emerald-500/50 shadow-sm font-semibold"
+                      : "bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800"
+                  }`}
+                >
+                  {chain}
                 </button>
-              </div>
-              <pre className="my-3 p-4 bg-gray-950 rounded-lg border border-gray-800 font-mono text-[11px] text-gray-300 overflow-x-auto">
-{`from uagents import Agent, Context
-
-agent = Agent(name="${agentName}", seed="${agentName}_seed_key")
-
-@agent.on_interval(period=${agentInterval}.0)
-async def run(ctx: Context):
-    ctx.logger.info("Executing: ${agentRole} on BNB Chain")
-    # Querying Fetch.ai Agentverse & Agent Launch Contracts...
-
-if __name__ == "__main__":
-    agent.run()`}
-              </pre>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: SIGNALS */}
-        {activeTab === 'signals' && (
-          <div className="bg-gray-900/60 rounded-xl border border-gray-800 p-6 space-y-4">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Bell className="h-5 w-5 text-emerald-400" />
-              Live On-Chain Agent Triggers
-            </h3>
-            <div className="space-y-3">
-              {[
-                { time: '3 mins ago', tag: 'Graduation Alert', desc: '$LOA bonding curve hit 92%! Approaching PancakeSwap listing threshold.', high: true },
-                { time: '12 mins ago', tag: 'Gainers Alert', desc: '$ZUCITY up +24.8% on BSC volume surge over the past 24 hours.', high: false },
-                { time: '1 hr ago', tag: 'Ecosystem', desc: 'Fetch.ai ASI:One protocol relayed 4,200 microtransactions across Agentverse.', high: false },
-              ].map((a, i) => (
-                <div key={i} className="p-4 bg-gray-950/80 rounded-xl border border-gray-800 flex justify-between items-start">
-                  <div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${a.high ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'}`}>
-                      {a.tag}
-                    </span>
-                    <p className="text-xs text-gray-300 mt-1">{a.desc}</p>
-                  </div>
-                  <span className="text-[11px] text-gray-500">{a.time}</span>
-                </div>
               ))}
             </div>
           </div>
-        )}
-      </main>
 
-      {/* ======================================================== */}
-      {/* 1. INTERACTIVE TOKEN CHART MODAL (7D / 30D)              */}
-      {/* ======================================================== */}
-      {selectedTokenForChart && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-gray-800">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-sm">
-                  {selectedTokenForChart.symbol}
+          {/* Markets Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {filteredMarkets.map((market) => {
+              const isSelected = selectedMarket.id === market.id;
+              return (
+                <div
+                  key={market.id}
+                  onClick={() => setSelectedMarket(market)}
+                  className={`cursor-pointer rounded-2xl p-4 transition-all border ${
+                    isSelected
+                      ? "bg-slate-900 border-emerald-500 shadow-lg shadow-emerald-500/10 scale-[1.02]"
+                      : "bg-slate-900/50 border-slate-800 hover:border-slate-700 hover:bg-slate-900"
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
+                      {market.chain}
+                    </span>
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        isSelected ? "bg-emerald-400 animate-pulse" : "bg-slate-600"
+                      }`}
+                    />
+                  </div>
+                  <h3 className="text-base font-bold text-white mb-1">{market.name}</h3>
+                  <div className="flex justify-between items-center text-xs mt-3 pt-3 border-t border-slate-800/80">
+                    <span className="text-slate-400">TVL</span>
+                    <span className="font-semibold text-emerald-400">{market.tvl}</span>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    {selectedTokenForChart.name} (${selectedTokenForChart.symbol})
-                  </h3>
-                  <p className="text-xs text-gray-400">Current Price: <span className="font-mono text-emerald-400 font-bold">${selectedTokenForChart.price}</span></p>
+              );
+            })}
+          </div>
+
+          {/* 4 Stat Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
+              <span className="text-xs text-slate-400">Total Value Locked (TVL)</span>
+              <div className="text-2xl font-black text-white mt-2">{selectedMarket.tvl}</div>
+              <div className="text-[11px] text-emerald-400 flex items-center gap-1 mt-1">
+                <TrendingUp className="w-3 h-3" /> +5.4% from selected period
+              </div>
+            </div>
+
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
+              <span className="text-xs text-slate-400">Supply APR (Base Yield)</span>
+              <div className="text-2xl font-black text-emerald-400 mt-2">
+                {selectedMarket.supplyApr}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">Compound Comet Base</div>
+            </div>
+
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
+              <span className="text-xs text-slate-400">Borrow APR (Variable)</span>
+              <div className="text-2xl font-black text-teal-300 mt-2">
+                {selectedMarket.borrowApr}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">Dynamic Algorithm</div>
+            </div>
+
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
+              <span className="text-xs text-slate-400">Utilization Rate</span>
+              <div className="text-2xl font-black text-white mt-2">
+                {selectedMarket.utilization}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">Optimized Liquidity</div>
+            </div>
+          </div>
+
+          {/* Timeframe Filter Bar */}
+          <div className="flex justify-between items-center mb-6 bg-slate-900/40 p-2 rounded-2xl border border-slate-800/80">
+            <div className="flex items-center gap-2 px-3">
+              <BarChart3 className="w-4 h-4 text-emerald-400" />
+              <span className="text-xs font-semibold text-slate-300">Live Chart Filters:</span>
+            </div>
+            <div className="flex gap-1.5">
+              {TIMEFRAMES.map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => setSelectedTimeframe(tf)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                    selectedTimeframe === tf
+                      ? "bg-emerald-500 text-slate-950 shadow-md font-bold"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800"
+                  }`}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 2 CHARTS */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-xl">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                Market Liquidity & TVL Trend
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Historical curve for {selectedMarket.name} ({selectedTimeframe})
+              </p>
+              <div className="h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="tvlColor" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis dataKey="time" stroke="#64748b" tick={{ fontSize: 11 }} />
+                    <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#0f172a",
+                        borderColor: "#334155",
+                        borderRadius: "12px",
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="tvl"
+                      name="TVL ($M)"
+                      stroke="#10b981"
+                      strokeWidth={2.5}
+                      fillOpacity={1}
+                      fill="url(#tvlColor)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-xl">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
+                <span className="h-2 w-2 rounded-full bg-teal-400" />
+                Daily Supply vs. Borrow Volume
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Comparative flow for {selectedMarket.name}
+              </p>
+              <div className="h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis dataKey="time" stroke="#64748b" tick={{ fontSize: 11 }} />
+                    <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#0f172a",
+                        borderColor: "#334155",
+                        borderRadius: "12px",
+                      }}
+                    />
+                    <Bar dataKey="supplyVolume" name="Supply ($M)" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="borrowVolume" name="Borrow ($M)" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* VIEW 2: ADMIN TELEMETRY (Protected with Login) */}
+      {activeTab === "admin" && (
+        <div className="max-w-7xl mx-auto w-full px-6 py-8 flex-1">
+          {!isAdminLoggedIn ? (
+            /* Admin Login Card */
+            <div className="max-w-md mx-auto bg-slate-900/90 border border-slate-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl mt-8">
+              <div className="text-center mb-6">
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 mx-auto mb-3">
+                  <Lock className="h-7 w-7 text-slate-950" />
                 </div>
+                <h2 className="text-2xl font-bold text-white">Telemetry Admin Login</h2>
+                <p className="text-xs text-slate-400 mt-1">Ecosystem Telemetry & User KPIs</p>
               </div>
 
-              {/* Timeframe selector (7D / 30D) */}
-              <div className="flex items-center gap-2">
-                <div className="bg-gray-950 p-1 rounded-lg border border-gray-800 flex text-xs">
-                  <button 
-                    onClick={() => setChartTimeframe('7D')}
-                    className={`px-3 py-1 rounded font-medium transition ${chartTimeframe === '7D' ? 'bg-emerald-500 text-black font-bold' : 'text-gray-400 hover:text-white'}`}>
-                    7 Days
-                  </button>
-                  <button 
-                    onClick={() => setChartTimeframe('30D')}
-                    className={`px-3 py-1 rounded font-medium transition ${chartTimeframe === '30D' ? 'bg-emerald-500 text-black font-bold' : 'text-gray-400 hover:text-white'}`}>
-                    30 Days
-                  </button>
+              {loginError && (
+                <div className="mb-4 bg-rose-500/10 border border-rose-500/30 text-rose-400 px-3.5 py-2 rounded-xl text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{loginError}</span>
                 </div>
-                <button 
-                  onClick={() => setSelectedTokenForChart(null)}
-                  className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg">
-                  <X className="h-5 w-5" />
+              )}
+
+              <form onSubmit={handleAdminLogin} className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                    Username
+                  </label>
+                  <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5">
+                    <Users className="w-4 h-4 text-slate-500" />
+                    <input
+                      type="text"
+                      value={adminUser}
+                      onChange={(e) => setAdminUser(e.target.value)}
+                      placeholder="admin"
+                      className="bg-transparent text-xs text-white focus:outline-none flex-1"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                    Password
+                  </label>
+                  <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5">
+                    <KeyRound className="w-4 h-4 text-slate-500" />
+                    <input
+                      type="password"
+                      value={adminPass}
+                      onChange={(e) => setAdminPass(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="bg-transparent text-xs text-white focus:outline-none flex-1"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold py-3 rounded-xl text-xs transition shadow-lg shadow-emerald-500/20"
+                >
+                  Sign In to Admin Portal
+                </button>
+              </form>
+
+              <div className="mt-5 pt-4 border-t border-slate-800/80 text-center">
+                <span className="text-[11px] text-slate-500">
+                  Demo Credentials: <strong className="text-slate-300">admin</strong> /{" "}
+                  <strong className="text-slate-300">compound2025</strong>
+                </span>
+              </div>
+            </div>
+          ) : (
+            /* Logged in Telemetry Dashboard */
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                    Platform Telemetry & Growth Metrics
+                  </h2>
+                  <p className="text-xs text-slate-400">Verifiable DAU and unique user tracking</p>
+                </div>
+                <button
+                  onClick={() => setIsAdminLoggedIn(false)}
+                  className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl text-xs border border-slate-700 transition"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-400" />
+                  Sign Out
                 </button>
               </div>
-            </div>
 
-            {/* Price Stats Banner */}
-            <div className="grid grid-cols-3 gap-3 text-xs">
-              <div className="bg-gray-950 p-3 rounded-xl border border-gray-800">
-                <span className="text-gray-500">Timeframe High</span>
-                <p className="text-white font-mono font-bold text-sm mt-0.5">
-                  ${chartTimeframe === '7D' ? selectedTokenForChart.high7d : selectedTokenForChart.high30d}
-                </p>
+              {/* KPI Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5">
+                  <span className="text-xs text-slate-400">Daily Active Users (DAU)</span>
+                  <div className="text-3xl font-black text-white mt-2">1,890</div>
+                  <div className="text-[11px] text-emerald-400 flex items-center gap-1 mt-1 font-medium">
+                    <ArrowUpRight className="w-3 h-3" /> +14.2% today
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5">
+                  <span className="text-xs text-slate-400">Total Unique Visitors</span>
+                  <div className="text-3xl font-black text-white mt-2">48,650</div>
+                  <div className="text-[11px] text-slate-400 mt-1">Cumulative platform traffic</div>
+                </div>
+
+                <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5">
+                  <span className="text-xs text-slate-400">AI Copilot Queries Handled</span>
+                  <div className="text-3xl font-black text-emerald-400 mt-2">14,280</div>
+                  <div className="text-[11px] text-emerald-400 flex items-center gap-1 mt-1 font-medium">
+                    <Zap className="w-3 h-3" /> 99.4% resolution rate
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5">
+                  <span className="text-xs text-slate-400">Avg. Session Duration</span>
+                  <div className="text-3xl font-black text-white mt-2">4m 38s</div>
+                  <div className="text-[11px] text-slate-400 mt-1">Institutional deep research</div>
+                </div>
               </div>
-              <div className="bg-gray-950 p-3 rounded-xl border border-gray-800">
-                <span className="text-gray-500">Timeframe Low</span>
-                <p className="text-white font-mono font-bold text-sm mt-0.5">
-                  ${chartTimeframe === '7D' ? selectedTokenForChart.low7d : selectedTokenForChart.low30d}
+
+              {/* Traffic Chart */}
+              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-xl mb-8">
+                <h3 className="text-sm font-bold text-white mb-1">
+                  User Adoption & AI Interaction Curve (30-Day Growth)
+                </h3>
+                <p className="text-xs text-slate-400 mb-4">
+                  Tracking unique visitors vs. active daily users
                 </p>
-              </div>
-              <div className="bg-gray-950 p-3 rounded-xl border border-gray-800">
-                <span className="text-gray-500">Market Cap</span>
-                <p className="text-emerald-400 font-mono font-bold text-sm mt-0.5">
-                  ${selectedTokenForChart.mcap}
-                </p>
+                <div className="h-[280px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={TRAFFIC_DATA}>
+                      <defs>
+                        <linearGradient id="visColor" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                      <XAxis dataKey="day" stroke="#64748b" tick={{ fontSize: 11 }} />
+                      <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#0f172a",
+                          borderColor: "#334155",
+                          borderRadius: "12px",
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="visitors"
+                        name="Total Visitors"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        fill="url(#visColor)"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="activeUsers"
+                        name="Active Users (DAU)"
+                        stroke="#14b8a6"
+                        strokeWidth={2}
+                        fill="#14b8a6"
+                        fillOpacity={0.2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
+          )}
+        </div>
+      )}
 
-            {/* SVG Interactive Trendline Chart */}
-            <div className="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-2">
-              <div className="flex justify-between text-[11px] text-gray-500 font-mono">
-                <span>{chartTimeframe === '7D' ? '7 Days Ago' : '30 Days Ago'}</span>
-                <span>Live Price Trend</span>
-                <span>Today</span>
+      {/* CIRCLE DEVELOPER LENDING & BORROWING MODAL */}
+      {isLendingModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+                  <Coins className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    Circle USDC Portal
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-semibold">
+                      Gasless
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Target: {selectedMarket.name} ({selectedMarket.chain})
+                  </p>
+                </div>
               </div>
-              <div className="h-44 w-full flex items-center justify-center">
-                <svg className="w-full h-full overflow-visible" viewBox="0 0 500 150">
-                  <defs>
-                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
-                  {/* Fill area */}
-                  <path 
-                    d={chartTimeframe === '7D' 
-                      ? "M 0 110 Q 70 80, 140 95 T 280 40 T 420 60 T 500 20 L 500 150 L 0 150 Z" 
-                      : "M 0 130 Q 80 120, 160 85 T 320 65 T 440 30 T 500 15 L 500 150 L 0 150 Z"} 
-                    fill="url(#chartGrad)" 
-                  />
-                  {/* Stroke line */}
-                  <path 
-                    d={chartTimeframe === '7D' 
-                      ? "M 0 110 Q 70 80, 140 95 T 280 40 T 420 60 T 500 20" 
-                      : "M 0 130 Q 80 120, 160 85 T 320 65 T 440 30 T 500 15"} 
-                    fill="none" 
-                    stroke="#10b981" 
-                    strokeWidth="3" 
-                    strokeLinecap="round" 
-                  />
-                  {/* Endpoint Pulse */}
-                  <circle cx="500" cy={chartTimeframe === '7D' ? "20" : "15"} r="5" fill="#10b981" className="animate-ping" />
-                  <circle cx="500" cy={chartTimeframe === '7D' ? "20" : "15"} r="4" fill="#34d399" />
-                </svg>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-xs text-gray-500">Graduation Progress: {selectedTokenForChart.progress}%</span>
-              <button 
-                onClick={() => setSelectedTokenForChart(null)}
-                className="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs px-4 py-2 rounded-xl transition">
-                Close Chart
+              <button
+                onClick={() => setIsLendingModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* ======================================================== */}
-      {/* 2. HOSTINGER-STYLE FLOATING GEMINI AI COPILOT            */}
-      {/* ======================================================== */}
+            {/* Action Tabs: Supply vs Borrow */}
+            <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800/80 mb-5">
+              <button
+                onClick={() => setLendingActionType("supply")}
+                className={`py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  lendingActionType === "supply"
+                    ? "bg-emerald-500 text-slate-950 shadow-md"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <ArrowUpRight className="w-3.5 h-3.5" />
+                Supply USDC (Earn)
+              </button>
+              <button
+                onClick={() => setLendingActionType("borrow")}
+                className={`py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  lendingActionType === "borrow"
+                    ? "bg-teal-500 text-slate-950 shadow-md"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <ArrowDownRight className="w-3.5 h-3.5" />
+                Borrow USDC
+              </button>
+            </div>
 
-      {/* Floating Trigger Button (Bottom-Right) */}
-      {!isCopilotOpen && (
-        <button 
-          onClick={() => setIsCopilotOpen(true)}
-          className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:scale-105 active:scale-95 text-black p-4 rounded-full shadow-2xl shadow-emerald-500/40 flex items-center gap-2.5 font-bold text-xs transition duration-200">
-          <Bot className="h-5 w-5" />
-          <span>Ask AI Copilot</span>
-          <span className="h-2 w-2 rounded-full bg-black animate-ping"></span>
-        </button>
-      )}
-
-      {/* Hostinger-style Sliding Drawer */}
-      {isCopilotOpen && (
-        <div className="fixed bottom-0 right-0 top-0 w-full sm:w-[420px] bg-[#0c1322] border-l border-gray-800 z-50 flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
-          
-          {/* Drawer Header */}
-          <div className="p-4 border-b border-gray-800 bg-[#0f172a] flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-black font-bold">
-                <Sparkles className="h-5 w-5" />
+            {/* Deposit Input */}
+            <div className="mb-4">
+              <div className="flex justify-between items-center text-xs text-slate-400 mb-1.5">
+                <span>Amount to {lendingActionType === "supply" ? "Deposit" : "Borrow"}</span>
+                <span>Balance: 12,450.00 USDC</span>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-                  Agent Launch Copilot
-                </h3>
-                <p className="text-[11px] text-emerald-400 font-medium">Powered by Google Gemini 1.5</p>
+              <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 focus-within:border-emerald-500 rounded-2xl p-3 transition">
+                <input
+                  type="number"
+                  value={lendingAmount}
+                  onChange={(e) => setLendingAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="bg-transparent text-lg font-bold text-white focus:outline-none flex-1"
+                />
+                <span className="text-xs font-bold text-emerald-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
+                  USDC
+                </span>
               </div>
             </div>
-            <button 
-              onClick={() => setIsCopilotOpen(false)}
-              className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition">
-              <X className="h-5 w-5" />
-            </button>
-          </div>
 
-          {/* Quick Prompts (Pills) */}
-          <div className="p-3 bg-gray-950/60 border-b border-gray-800 flex gap-2 overflow-x-auto text-[11px]">
-            <button 
-              onClick={() => handleSendCopilotMessage("Which token is gaining the fastest right now?")}
-              className="bg-gray-800/80 hover:bg-gray-700 text-gray-300 px-2.5 py-1 rounded-full whitespace-nowrap transition border border-gray-700">
-              🚀 Top Gainers?
-            </button>
-            <button 
-              onClick={() => handleSendCopilotMessage("Explain what Fetch.ai (FET) does on BNB Chain.")}
-              className="bg-gray-800/80 hover:bg-gray-700 text-gray-300 px-2.5 py-1 rounded-full whitespace-nowrap transition border border-gray-700">
-              💡 Explain $FET
-            </button>
-            <button 
-              onClick={() => handleSendCopilotMessage("How close is $LOA to graduating to PancakeSwap?")}
-              className="bg-gray-800/80 hover:bg-gray-700 text-gray-300 px-2.5 py-1 rounded-full whitespace-nowrap transition border border-gray-700">
-              🥞 $LOA Graduation?
-            </button>
-          </div>
-
-          {/* Chat Messages Body */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 text-xs leading-relaxed">
-            {copilotMessages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                  msg.role === 'user' 
-                    ? 'bg-emerald-500 text-black font-medium' 
-                    : 'bg-gray-900 border border-gray-800 text-gray-200'
-                }`}>
-                  {msg.text}
-                </div>
+            {/* Live Rate Summary */}
+            <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-2 mb-5 text-xs">
+              <div className="flex justify-between text-slate-400">
+                <span>Current Protocol APR</span>
+                <span className="font-bold text-emerald-400">
+                  {lendingActionType === "supply" ? selectedMarket.supplyApr : selectedMarket.borrowApr}
+                </span>
               </div>
-            ))}
-            {isThinking && (
-              <div className="flex justify-start">
-                <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-2.5 text-xs text-gray-400 flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-emerald-400 animate-spin" />
-                  Gemini is analyzing live blockchain data...
-                </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Gas Fee</span>
+                <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                  <Zap className="w-3 h-3" /> $0.00 (Sponsored by Circle Paymaster)
+                </span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Execution Provider</span>
+                <span className="text-slate-200 font-medium">Circle Programmable Wallet</span>
+              </div>
+            </div>
+
+            {/* Success Notification */}
+            {lendingSuccess && (
+              <div className="mb-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 p-3 rounded-2xl text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>
+                  Success! Transaction confirmed via Circle CCTP on {selectedMarket.chain}.
+                </span>
               </div>
             )}
-          </div>
 
-          {/* Chat Input Form */}
-          <form onSubmit={(e) => { e.preventDefault(); handleSendCopilotMessage(); }} className="p-3 border-t border-gray-800 bg-[#0f172a] flex gap-2">
-            <input 
-              type="text" 
-              value={copilotInput}
-              onChange={(e) => setCopilotInput(e.target.value)}
-              placeholder="Ask anything (e.g. 'ቅልጡፍ ቶከን ዝድይብ ዘሎ ንገረኒ')..."
-              className="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
-            />
-            <button 
-              type="submit" 
-              disabled={isThinking}
-              className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black px-4 py-2.5 rounded-xl text-xs font-bold transition">
-              <Send className="h-3.5 w-3.5" />
+            {/* Execute Button */}
+            <button
+              onClick={executeLendingAction}
+              disabled={isLendingProcessing || !lendingAmount || lendingSuccess}
+              className="w-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold py-3.5 rounded-2xl text-xs transition shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isLendingProcessing ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                  Routing via Circle Developer Platform...
+                </>
+              ) : lendingSuccess ? (
+                "Transaction Complete ✓"
+              ) : (
+                `Execute ${lendingActionType === "supply" ? "Supply" : "Borrow"} via Circle Wallet`
+              )}
             </button>
-          </form>
-
+          </div>
         </div>
       )}
 
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setIsAiOpen(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black px-5 py-3 rounded-2xl shadow-2xl shadow-emerald-500/30 transition transform hover:scale-105"
+      >
+        <Bot className="w-5 h-5 fill-slate-950" />
+        <span>Ask AI Copilot</span>
+      </button>
+
+      {/* SLIDE-OUT AI COPILOT DRAWER */}
+      <aside
+        className={`fixed top-0 right-0 z-50 h-full w-full max-w-md bg-slate-950 border-l border-slate-800 p-6 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out ${
+          isAiOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="flex justify-between items-center pb-4 border-b border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+              <Bot className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white flex items-center gap-1.5">
+                Circle & Compound Copilot
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              </h2>
+              <p className="text-[10px] text-slate-400">Powered by Google Gemini</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsAiOpen(false)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Quick Suggestion Pills */}
+        <div className="py-3 flex flex-wrap gap-1.5 border-b border-slate-800/80">
+          {[
+            "💡 How does Circle Wallet work?",
+            "💰 Best USDC Supply APR?",
+            "🚀 What is CCTP?",
+          ].map((pill) => (
+            <button
+              key={pill}
+              onClick={() => handleSendMessage(pill)}
+              className="text-[11px] bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 px-2.5 py-1 rounded-full transition"
+            >
+              {pill}
+            </button>
+          ))}
+        </div>
+
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto py-4 space-y-3 pr-1">
+          {chatMessages.map((msg, index) => (
+            <div
+              key={index}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-emerald-500 text-slate-950 font-semibold"
+                    : "bg-slate-900 border border-slate-800 text-slate-200"
+                }`}
+              >
+                {msg.text}
+              </div>
+            </div>
+          ))}
+
+          {isAiLoading && (
+            <div className="flex justify-start">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-slate-400 flex items-center gap-2">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                Gemini AI is analyzing...
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Chat Input */}
+        <div className="pt-3 border-t border-slate-800">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }}
+            className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 focus-within:border-emerald-500 transition"
+          >
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Ask about Circle USDC or Compound V3..."
+              className="bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none flex-1"
+            />
+            <button
+              type="submit"
+              disabled={isAiLoading || !chatInput.trim()}
+              className="p-1.5 rounded-lg bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-40 transition"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          </form>
+        </div>
+      </aside>
     </div>
   );
 }
